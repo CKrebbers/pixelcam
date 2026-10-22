@@ -28,6 +28,7 @@ body{background:var(--body);color:var(--ink);font-family:var(--f-body);font-size
 .screen{position:relative;background:var(--screen);display:grid;place-items:center;aspect-ratio:4/3;max-width:100%;overflow:hidden}
 #out{max-width:100%;max-height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .tag{position:absolute;left:8px;top:6px;font-family:var(--f-label);font-size:10px;color:#e9e9ea;letter-spacing:.08em;mix-blend-mode:difference}
+.tag.rec{color:#fff;background:var(--hot);mix-blend-mode:normal;padding:1px 5px}
 .tag.live::before{content:"";display:inline-block;width:7px;height:7px;background:var(--hot);margin-right:6px;vertical-align:1px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{font-family:var(--f-label);font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--body);color:var(--ink);
@@ -35,6 +36,9 @@ body{background:var(--body);color:var(--ink);font-family:var(--f-body);font-size
 .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 .btn:focus-visible,.seg button:focus-visible,input:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
 .btn.shut{background:var(--hot);color:var(--hot-ink);flex:2 1 auto}
+.btn.rec::before{content:"";display:inline-block;width:10px;height:10px;background:var(--hot);border-radius:50%;margin-right:8px;vertical-align:0}
+.btn.rec[aria-pressed=true]{background:var(--ink);color:var(--body)}
+.btn.rec[aria-pressed=true]::before{border-radius:0}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 label.btn{display:inline-flex;align-items:center;justify-content:center}
 .ctl{display:grid;gap:14px;border-top:2px solid var(--body-dk);padding-top:14px}
@@ -70,8 +74,12 @@ input[type=range]{width:100%;accent-color:var(--hot);height:28px}
     <button class="btn" id="flip" type="button" disabled>Wissel</button>
   </div>
   <div class="row">
-    <label class="btn" for="pick">Kies foto</label>
-    <input class="hide" type="file" id="pick" accept="image/*">
+    <button class="btn rec" id="rec" type="button" aria-pressed="false" disabled>Opnemen</button>
+    <button class="btn" id="savevid" type="button" hidden>Bewaar video</button>
+  </div>
+  <div class="row">
+    <label class="btn" for="pick">Kies foto/video</label>
+    <input class="hide" type="file" id="pick" accept="image/*,video/*">
     <button class="btn" id="save" type="button">Bewaar PNG</button>
   </div>
   <div class="msg" id="msg" role="status"></div>
@@ -183,18 +191,21 @@ function draw(){
     }
   }
   sctx.putImageData(id,0,0);
-  out.width=w*S.px;out.height=h*S.px;
-  octx.imageSmoothingEnabled=false;octx.drawImage(small,0,0,out.width,out.height);
+  const OW=rec?rec.W:(w*S.px)&~1,OH=rec?rec.H:(h*S.px)&~1;
+  if(out.width!==OW)out.width=OW;if(out.height!==OH)out.height=OH;
+  octx.imageSmoothingEnabled=false;octx.drawImage(small,0,0,OW,OH);
+  const cx=OW/w,cy=OH/h;
   if(S.grid!=="uit"&&S.px>=4){
     octx.fillStyle="rgba(0,0,0,.28)";
-    for(let y=0;y<h;y++)octx.fillRect(0,y*S.px+S.px-1,out.width,S.grid==="scanlines"?Math.max(1,S.px/3|0):1);
-    if(S.grid==="lijnen")for(let x=0;x<w;x++)octx.fillRect(x*S.px+S.px-1,0,1,out.height);
+    for(let y=0;y<h;y++)octx.fillRect(0,Math.round((y+1)*cy)-1,OW,S.grid==="scanlines"?Math.max(1,cy/3|0):1);
+    if(S.grid==="lijnen")for(let x=0;x<w;x++)octx.fillRect(Math.round((x+1)*cx)-1,0,1,OH);
   }
   $("res").textContent=w+"×"+h+" PX";
 }
 
 function loadFile(f){
   if(!f)return;stopLive();
+  if(f.type.startsWith("video/")){loadVideo(f);return}
   const url=URL.createObjectURL(f),img=new Image();
   img.onload=()=>{S.src=img;$("tag").textContent="FOTO";$("tag").className="tag";draw();msg("")};
   img.onerror=()=>msg("Dit bestand kan niet als afbeelding worden geopend. Kies een JPG, PNG of HEIC.");
@@ -203,6 +214,13 @@ function loadFile(f){
 $("cam").onchange=e=>{loadFile(e.target.files[0]);e.target.value=""};
 $("pick").onchange=e=>{loadFile(e.target.files[0]);e.target.value=""};
 const msg=t=>$("msg").textContent=t;
+function loop(){cancelAnimationFrame(raf);const f=()=>{draw();raf=requestAnimationFrame(f)};f()}
+async function loadVideo(f){
+  const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");
+  v.src=URL.createObjectURL(f);
+  try{await v.play()}catch(e){msg("Deze video kan hier niet worden afgespeeld. Probeer een MP4 of MOV.");return}
+  S.live=v;S.mirror=false;$("tag").textContent="VIDEO";$("tag").className="tag live";$("shut").textContent="Maak foto";ui();loop();msg("Video speelt in een lus. Tik op Opnemen om de gefilterde versie op te slaan.");
+}
 
 // Live camera
 let raf=0,stream=null,facing="environment",gotLive=false;
@@ -215,7 +233,7 @@ async function startLive(){
     const set=stream.getVideoTracks()[0]?.getSettings?.()||{};
     S.live=v;S.mirror=(set.facingMode||facing)==="user";gotLive=true;
     $("tag").textContent="LIVE";$("tag").className="tag live";$("shut").textContent="Maak foto";$("flip").disabled=false;
-    cancelAnimationFrame(raf);const loop=()=>{draw();raf=requestAnimationFrame(loop)};loop();msg("");
+    ui();loop();msg("");
   }catch(e){
     if(e?.name==="NotAllowedError")msg("Camera-toegang geweigerd. Sta de camera toe in je browserinstellingen en tik opnieuw op ‘Start camera’.");
     else if(e?.name==="NotFoundError")msg("Geen camera gevonden op dit apparaat.");
@@ -223,12 +241,12 @@ async function startLive(){
   }
 }
 function stopLive(){
-  if(!S.live)return;cancelAnimationFrame(raf);
+  if(!S.live)return;if(rec)stopRec();cancelAnimationFrame(raf);S.live.pause?.();
   const v=S.live,c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;
   const g=c.getContext("2d");if(S.mirror){g.translate(c.width,0);g.scale(-1,1)}g.drawImage(v,0,0);
   stream?.getTracks().forEach(t=>t.stop());stream=null;
   S.src=c;S.live=null;S.mirror=false;$("tag").textContent="FOTO";$("tag").className="tag";
-  $("shut").textContent="Start camera";$("flip").disabled=true;draw();
+  $("shut").textContent="Start camera";ui();draw();
 }
 function noLive(){
   msg("Live beeld werkt hier niet (de pagina moet via https openen). ‘Start camera’ opent nu de fotocamera van je telefoon.");
@@ -240,7 +258,48 @@ $("shut").onclick=()=>{
   startLive();
 };
 $("flip").onclick=()=>{facing=facing==="user"?"environment":"user";startLive()};
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&S.live){cancelAnimationFrame(raf)}else if(!document.hidden&&S.live){const loop=()=>{draw();raf=requestAnimationFrame(loop)};loop()}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){if(rec)stopRec();cancelAnimationFrame(raf)}else if(S.live)loop()});
+function ui(){
+  const cam=!!(S.live&&stream);
+  $("flip").disabled=!cam||!!rec;
+  $("rec").disabled=!S.live;
+  $("shut").disabled=!!rec;$("pick").disabled=!!rec;
+  $("rec").setAttribute("aria-pressed",!!rec);$("rec").textContent=rec?"Stop opname":"Opnemen";
+}
+
+// Video-opname van het gefilterde beeld
+let rec=null,lastVid=null;
+const MIMES=["video/mp4;codecs=avc1.42E01E","video/mp4","video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
+function startRec(){
+  if(!S.live)return;
+  if(!out.captureStream||!window.MediaRecorder){msg("Opnemen wordt in deze browser niet ondersteund. Gebruik Safari of Chrome.");return}
+  const mime=MIMES.find(m=>MediaRecorder.isTypeSupported?.(m))||"";
+  let mr;
+  try{mr=new MediaRecorder(out.captureStream(30),mime?{mimeType:mime,videoBitsPerSecond:6e6}:{})}
+  catch(e){msg("Opnemen lukt niet in deze browser.");return}
+  const chunks=[],type=mr.mimeType||mime||"video/webm";
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  mr.onstop=()=>{
+    if(!chunks.length){msg("Opname is leeg. Probeer het opnieuw.");return}
+    const sec=Math.round((performance.now()-t0)/1000);
+    lastVid={blob:new Blob(chunks,{type}),ext:/mp4/.test(type)?"mp4":"webm"};
+    $("savevid").hidden=false;$("savevid").textContent="Bewaar video ("+sec+" s)";
+    msg("Opname klaar. Tik op ‘Bewaar video’.");
+  };
+  const t0=performance.now();
+  rec={mr,W:out.width,H:out.height,t0,tag:$("tag").textContent,timer:setInterval(()=>{
+    const s=(performance.now()-t0)/1000|0;$("tag").textContent="REC "+String(s/60|0).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  },250)};
+  $("tag").className="tag rec";$("tag").textContent="REC 00:00";
+  mr.start(1000);ui();msg("");
+}
+function stopRec(){
+  if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);
+  try{r.mr.stop()}catch(e){}
+  $("tag").textContent=r.tag;$("tag").className="tag live";ui();
+}
+$("rec").onclick=()=>rec?stopRec():startRec();
+$("savevid").onclick=()=>{if(lastVid)saveBlob(lastVid.blob,"pixelcam-"+Date.now()+"."+lastVid.ext)};
 
 // Bewaren: via Claude-viewer als die er is, anders gewone download
 let dl=null;
@@ -248,18 +307,19 @@ let dl=null;
 $("save").onclick=()=>{
   if(S.live)draw();
   const name="pixelcam-"+Date.now()+".png";
-  out.toBlob(async b=>{
-    if(dl){
-      try{await dl.save({filename:name,data:b});msg("Bewaard.")}
-      catch(e){if(e?.code==="rate_limited")msg("Er staat al een opslagvraag open.");else if(e?.code!=="declined")msg("Opslaan is hier niet beschikbaar.")}
-      return;
-    }
-    const f=new File([b],name,{type:"image/png"});
-    if(navigator.canShare?.({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e?.name==="AbortError")return}}
-    const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.append(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),4000);msg("Bewaard.");
-  },"image/png");
+  out.toBlob(b=>saveBlob(b,name),"image/png");
 };
+async function saveBlob(b,name){
+  if(dl){
+    try{await dl.save({filename:name,data:b});msg("Bewaard.")}
+    catch(e){if(e?.code==="rate_limited")msg("Er staat al een opslagvraag open.");else if(e?.code!=="declined")msg("Opslaan is hier niet beschikbaar.")}
+    return;
+  }
+  const f=new File([b],name,{type:b.type});
+  if(navigator.canShare?.({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e?.name==="AbortError")return}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),60000);msg("Bewaard.");
+}
 
 S.src=sample();sync();draw();
 })();
