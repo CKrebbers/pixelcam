@@ -105,6 +105,10 @@ input[type=range]{width:100%;accent-color:var(--hot);height:28px}
       <div class="h"><span>Raster</span></div>
       <div class="seg" id="grid"></div>
     </div>
+    <div class="c">
+      <div class="h"><span>Animaties</span><span class="v" id="anv"></span></div>
+      <div class="seg" id="anim"></div>
+    </div>
   </div>
 </div>
 
@@ -122,9 +126,9 @@ const PALS={
   cga:["#000000","#55ffff","#ff55ff","#ffffff"],
   nacht:["#0b0a12","#2a1f3d","#5a2d5e","#b8125a","#f2795a","#f5d7a1","#7ec4c1","#2e6f8e"],
 };
-const S={px:10,pal:"vrij",lv:5,dith:"bayer",grid:"uit",src:null,live:null,mirror:false};
+const S={px:10,pal:"vrij",lv:5,dith:"bayer",grid:"uit",anim:["kat"],src:null,live:null,mirror:false};
 try{Object.assign(S,JSON.parse(localStorage.getItem("pixelcam")||"{}"),{src:null,live:null})}catch(e){}
-const persist=()=>{try{localStorage.setItem("pixelcam",JSON.stringify({px:S.px,pal:S.pal,lv:S.lv,dith:S.dith,grid:S.grid}))}catch(e){}};
+const persist=()=>{try{localStorage.setItem("pixelcam",JSON.stringify({px:S.px,pal:S.pal,lv:S.lv,dith:S.dith,grid:S.grid,anim:S.anim}))}catch(e){}};
 const B4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+.5)/16-.5);
 
 function seg(el,opts,key,label){
@@ -143,12 +147,21 @@ seg($("pal"),Object.keys(PALS),"pal",k=>{
 });
 seg($("dith"),["uit","bayer","ruis"],"dith");
 seg($("grid"),["uit","lijnen","scanlines"],"grid");
+const ANIMS=["kat","vogels","regen","fonkels","hartjes","glitch"];
+if(!Array.isArray(S.anim))S.anim=["kat"];S.anim=S.anim.filter(a=>ANIMS.includes(a));
+ANIMS.forEach(a=>{
+  const b=document.createElement("button");b.type="button";b.dataset.v=a;b.textContent=a;
+  b.onclick=()=>{S.anim=S.anim.includes(a)?S.anim.filter(x=>x!==a):[...S.anim,a];persist();sync();ui();refreshLoop()};
+  $("anim").append(b);
+});
 function sync(){
   $("px").value=S.px;$("lv").value=S.lv;$("pxv").textContent=S.px+" px";
   $("lvv").textContent=S.pal==="vrij"?S.lv+" / kanaal":"n.v.t.";
   $("lv").disabled=S.pal!=="vrij";
   for(const [id,k] of [["pal","pal"],["dith","dith"],["grid","grid"]])
     for(const b of $(id).children)b.setAttribute("aria-pressed",b.dataset.v===S[k]);
+  for(const b of $("anim").children)b.setAttribute("aria-pressed",S.anim.includes(b.dataset.v));
+  $("anv").textContent=S.anim.length?S.anim.length+" aan":"uit";
 }
 $("px").oninput=e=>{S.px=+e.target.value;sync();draw();persist()};
 $("lv").oninput=e=>{S.lv=+e.target.value;sync();draw();persist()};
@@ -172,10 +185,16 @@ function draw(){
   const max=1080,k=Math.min(1,max/Math.max(sw,sh));
   const W=Math.round(sw*k),H=Math.round(sh*k);
   const w=Math.max(1,Math.round(W/S.px)),h=Math.max(1,Math.round(H/S.px));
-  small.width=w;small.height=h;sctx.imageSmoothingEnabled=true;
-  sctx.save();if(S.live&&S.mirror){sctx.translate(w,0);sctx.scale(-1,1)}sctx.drawImage(src,0,0,w,h);sctx.restore();
-  const id=sctx.getImageData(0,0,w,h),d=id.data;
+  const t=performance.now()/1000;
+  if(small.width!==w||small.height!==h){small.width=w;small.height=h}
+  const key=[srcId,w,h,S.pal,S.lv,S.dith].join("|");
   const pal=PALS[S.pal]?PALS[S.pal].map(hex):null;
+  let id;
+  if(!S.live&&cache&&cache.key===key){id=new ImageData(new Uint8ClampedArray(cache.data),w,h)}
+  else{
+  sctx.imageSmoothingEnabled=true;
+  sctx.save();if(S.live&&S.mirror){sctx.translate(w,0);sctx.scale(-1,1)}sctx.drawImage(src,0,0,w,h);sctx.restore();
+  id=sctx.getImageData(0,0,w,h);const d=id.data;
   const spread=pal?(255/Math.max(1,pal.length-1)):(255/(S.lv-1));
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const i=(y*w+x)*4;
@@ -190,7 +209,11 @@ function draw(){
       d[i]=q(r);d[i+1]=q(g);d[i+2]=q(b);
     }
   }
+  if(!S.live)cache={key,data:new Uint8ClampedArray(d)};
+  }
+  if(S.anim.includes("glitch"))glitch(id.data,w,h,t);
   sctx.putImageData(id,0,0);
+  sprites(sctx,t,w,h,pal);
   const OW=rec?rec.W:(w*S.px)&~1,OH=rec?rec.H:(h*S.px)&~1;
   if(out.width!==OW)out.width=OW;if(out.height!==OH)out.height=OH;
   octx.imageSmoothingEnabled=false;octx.drawImage(small,0,0,OW,OH);
@@ -207,7 +230,7 @@ function loadFile(f){
   if(!f)return;stopLive();
   if(f.type.startsWith("video/")){loadVideo(f);return}
   const url=URL.createObjectURL(f),img=new Image();
-  img.onload=()=>{S.src=img;$("tag").textContent="FOTO";$("tag").className="tag";draw();msg("")};
+  img.onload=()=>{setSrc(img);$("tag").textContent="FOTO";$("tag").className="tag";refreshLoop();msg("")};
   img.onerror=()=>msg("Dit bestand kan niet als afbeelding worden geopend. Kies een JPG, PNG of HEIC.");
   img.src=url;
 }
@@ -245,8 +268,8 @@ function stopLive(){
   const v=S.live,c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;
   const g=c.getContext("2d");if(S.mirror){g.translate(c.width,0);g.scale(-1,1)}g.drawImage(v,0,0);
   stream?.getTracks().forEach(t=>t.stop());stream=null;
-  S.src=c;S.live=null;S.mirror=false;$("tag").textContent="FOTO";$("tag").className="tag";
-  $("shut").textContent="Start camera";ui();draw();
+  setSrc(c);S.live=null;S.mirror=false;$("tag").textContent="FOTO";$("tag").className="tag";
+  $("shut").textContent="Start camera";ui();refreshLoop();
 }
 function noLive(){
   msg("Live beeld werkt hier niet (de pagina moet via https openen). ‘Start camera’ opent nu de fotocamera van je telefoon.");
@@ -258,11 +281,11 @@ $("shut").onclick=()=>{
   startLive();
 };
 $("flip").onclick=()=>{facing=facing==="user"?"environment":"user";startLive()};
-document.addEventListener("visibilitychange",()=>{if(document.hidden){if(rec)stopRec();cancelAnimationFrame(raf)}else if(S.live)loop()});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){if(rec)stopRec();cancelAnimationFrame(raf)}else refreshLoop()});
 function ui(){
   const cam=!!(S.live&&stream);
   $("flip").disabled=!cam||!!rec;
-  $("rec").disabled=!S.live;
+  $("rec").disabled=!(S.live||S.anim.length);
   $("shut").disabled=!!rec;$("pick").disabled=!!rec;
   $("rec").setAttribute("aria-pressed",!!rec);$("rec").textContent=rec?"Stop opname":"Opnemen";
 }
@@ -271,7 +294,7 @@ function ui(){
 let rec=null,lastVid=null;
 const MIMES=["video/mp4;codecs=avc1.42E01E","video/mp4","video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
 function startRec(){
-  if(!S.live)return;
+  if(!S.live&&!S.anim.length)return;
   if(!out.captureStream||!window.MediaRecorder){msg("Opnemen wordt in deze browser niet ondersteund. Gebruik Safari of Chrome.");return}
   const mime=MIMES.find(m=>MediaRecorder.isTypeSupported?.(m))||"";
   let mr;
@@ -287,7 +310,7 @@ function startRec(){
     msg("Opname klaar. Tik op ‘Bewaar video’.");
   };
   const t0=performance.now();
-  rec={mr,W:out.width,H:out.height,t0,tag:$("tag").textContent,timer:setInterval(()=>{
+  rec={mr,W:out.width,H:out.height,t0,tag:$("tag").textContent,cls:$("tag").className,timer:setInterval(()=>{
     const s=(performance.now()-t0)/1000|0;$("tag").textContent="REC "+String(s/60|0).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   },250)};
   $("tag").className="tag rec";$("tag").textContent="REC 00:00";
@@ -296,7 +319,7 @@ function startRec(){
 function stopRec(){
   if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);
   try{r.mr.stop()}catch(e){}
-  $("tag").textContent=r.tag;$("tag").className="tag live";ui();
+  $("tag").textContent=r.tag;$("tag").className=r.cls;ui();
 }
 $("rec").onclick=()=>rec?stopRec():startRec();
 $("savevid").onclick=()=>{if(lastVid)saveBlob(lastVid.blob,"pixelcam-"+Date.now()+"."+lastVid.ext)};
@@ -321,7 +344,76 @@ async function saveBlob(b,name){
   setTimeout(()=>URL.revokeObjectURL(a.href),60000);msg("Bewaard.");
 }
 
-S.src=sample();sync();draw();
+// ---------- Animaties ----------
+let cache=null,srcId=0;
+function setSrc(x){S.src=x;srcId++;cache=null}
+function refreshLoop(){if(S.live||S.anim.length)loop();else{cancelAnimationFrame(raf);draw()}}
+const rnd=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+const SPR={
+  kat:[[
+    "............O..O","............OOOO","O...........OKOK","O...........OOPO",".O..OOOOOOOOOOOO","..OODOODOODOOOO.","...OOOOOOOOOOO..","...O.O....O.O...","...O.O....O.O..."
+  ],[
+    "............O..O","............OOOO",".O..........OKOK","O...........OOPO","O...OOOOOOOOOOOO","..OODOODOODOOOO.","...OOOOOOOOOOO..","....O.O..O.O....","....O.O..O.O...."
+  ]],
+  vogel:[["B.....B",".B...B.","..BBB..","......."],[".......","..BBB..",".B...B.","B.....B"]],
+  hart:[".HH.HH.","HHHHHHH","HHHHHHH",".HHHHH.","..HHH..","...H..."],
+};
+const SCOL={O:"#e8873a",D:"#a8501c",K:"#1b1c20",P:"#ff8fb0",B:"#f4efe6",H:"#ff4f8b",R:"#a9d4ff",S:"#fff6c8"};
+const nearCache={};
+function col(c,pal){
+  if(!pal)return c;const k=c+"|"+S.pal;if(nearCache[k])return nearCache[k];
+  const [r,g,b]=hex(c);let best=pal[0],bd=1e9;
+  for(const q of pal){const dd=(r-q[0])**2*.3+(g-q[1])**2*.59+(b-q[2])**2*.11;if(dd<bd){bd=dd;best=q}}
+  return nearCache[k]="rgb("+best.join(",")+")";
+}
+function blit(g,rows,x,y,sc,pal){
+  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
+    const ch=rows[r][c];if(ch===".")continue;
+    g.fillStyle=col(SCOL[ch],pal);g.fillRect(x+c*sc,y+r*sc,sc,sc);
+  }
+}
+function sprites(g,t,w,h,pal){
+  const A=S.anim;if(!A.length)return;
+  const sc=Math.max(1,Math.round(Math.min(w,h)/70));
+  if(A.includes("regen")){
+    g.fillStyle=col(SCOL.R,pal);const n=Math.max(12,w*h/160|0),len=3*sc;
+    for(let i=0;i<n;i++){const x=rnd(i)*w|0,sp=h*(.9+rnd(i+.5)*.8);g.fillRect(x,Math.floor((t*sp+rnd(i+.3)*h)%(h+len))-len,Math.max(1,sc>>1),len)}
+  }
+  if(A.includes("fonkels")){
+    g.fillStyle=col(SCOL.S,pal);const ep=Math.floor(t/2.5);
+    for(let i=0;i<10;i++){
+      if(rnd(Math.floor(t*5)*13+i)<.35)continue;
+      const x=rnd(ep*31+i)*w|0,y=rnd(ep*17+i+.5)*h*.8|0,a=sc*(1+(rnd(ep+i*3)>.6));
+      g.fillRect(x,y,sc,sc);g.fillRect(x-a,y,sc,sc);g.fillRect(x+a,y,sc,sc);g.fillRect(x,y-a,sc,sc);g.fillRect(x,y+a,sc,sc);
+    }
+  }
+  if(A.includes("vogels"))for(let i=0;i<3;i++){
+    const bw=7*sc,span=w+bw,x=w-Math.floor((t*span/(7+i*2)+i*span/3)%span),y=Math.floor(h*(.1+.1*i)+Math.sin(t*2+i)*2*sc);
+    blit(g,SPR.vogel[Math.floor(t*5+i)%2],x,y,sc,pal);
+  }
+  if(A.includes("hartjes"))for(let i=0;i<6;i++){
+    const per=5+rnd(i)*3,p=((t+rnd(i+.2)*per)%per)/per;
+    blit(g,SPR.hart,Math.floor(rnd(i+.7)*(w-7*sc)+Math.sin(t*2+i)*2*sc),Math.floor(h-p*(h+6*sc)),sc,pal);
+  }
+  if(A.includes("kat")){
+    const cw=16*sc,span=w+cw,x=Math.floor((t*span/9)%span)-cw;
+    blit(g,SPR.kat[Math.floor(t*6)%2],x,h-9*sc-sc,sc,pal);
+  }
+}
+function glitch(d,w,h,t){
+  const s=Math.floor(t*10);if(rnd(s)<.35)return;
+  const bands=1+Math.floor(rnd(s+1)*4);
+  for(let b=0;b<bands;b++){
+    const y0=rnd(s*7+b)*h|0,bh=1+Math.floor(rnd(s*3+b)*Math.max(2,h/12)),off=Math.round((rnd(s*5+b)-.5)*w*.25);
+    for(let y=y0;y<Math.min(h,y0+bh);y++){
+      const row=d.slice(y*w*4,(y+1)*w*4);
+      for(let x=0;x<w;x++){const j=(((x-off)%w+w)%w)*4,i=(y*w+x)*4;d[i]=row[j];d[i+1]=row[j+1];d[i+2]=row[j+2]}
+    }
+  }
+  if(rnd(s+9)<.5)for(let y=0;y<h;y++)for(let x=w-1;x>0;x--){const i=(y*w+x)*4;d[i]=d[i-4]}
+}
+
+setSrc(sample());sync();ui();refreshLoop();
 })();
 </script>
 
