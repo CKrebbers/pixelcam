@@ -21,13 +21,16 @@
 html,body{height:100%}
 body{background:var(--body);color:var(--ink);font-family:var(--f-body);font-size:14px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
-.dev{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.dev{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.left{display:contents}
+.right{display:flex;flex-direction:column;gap:12px}
 .top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--body-dk);padding-bottom:8px}
 .brand{font-family:var(--f-label);font-size:18px;letter-spacing:.06em;margin:0}
 .meta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-variant-numeric:tabular-nums}
-.bezel{background:var(--ink);padding:12px;border:2px solid var(--ink);box-shadow:inset 0 0 0 2px #2b2d33}
+.bezel{background:var(--ink);padding:10px;border:2px solid var(--ink);box-shadow:inset 0 0 0 2px #2b2d33;position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:11;background:var(--body)}
 .screen{position:relative;background:var(--screen);display:flex;justify-content:center;align-items:center;min-height:200px;max-width:100%;overflow:hidden}
-#out{width:auto;height:auto;max-width:100%;max-height:70vh;max-height:70dvh;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+#out{width:auto;height:auto;max-width:100%;max-height:42vh;max-height:42dvh;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .tag{position:absolute;left:8px;top:6px;font-family:var(--f-label);font-size:10px;color:#e9e9ea;letter-spacing:.08em;mix-blend-mode:difference}
 .tag.rec{color:#fff;background:var(--hot);mix-blend-mode:normal;padding:1px 5px}
 .tag.live::before{content:"";display:inline-block;width:7px;height:7px;background:var(--hot);margin-right:6px;vertical-align:1px}
@@ -42,9 +45,11 @@ body{background:var(--body);color:var(--ink);font-family:var(--f-body);font-size
 .btn.rec[aria-pressed=true]::before{border-radius:0}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 label.btn{display:inline-flex;align-items:center;justify-content:center}
-.ctl{display:grid;gap:14px;border-top:2px solid var(--body-dk);padding-top:14px}
-.c{display:grid;gap:6px}
-.c .h{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.ctl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border-top:2px solid var(--body-dk);padding-top:12px}
+.c.wide{grid-column:1/-1}
+@media (max-width:340px){.ctl{grid-template-columns:minmax(0,1fr)}}
+.c{display:grid;gap:6px;min-width:0;align-content:start}
+.c .h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
 .c .v{font-variant-numeric:tabular-nums;font-weight:600}
 input[type=range]{width:100%;accent-color:var(--hot);height:28px}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
@@ -53,7 +58,32 @@ input[type=range]{width:100%;accent-color:var(--hot);height:28px}
 .sw{display:inline-flex}.sw i{width:8px;height:12px;display:block}
 .msg{font-size:12px;min-height:1.4em}
 .hide{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.btn.sm{min-height:36px;padding:7px 10px;font-size:11px;box-shadow:2px 2px 0 var(--ink)}
+.btn.sm{min-height:40px;padding:7px 8px;font-size:11px;letter-spacing:.03em;box-shadow:2px 2px 0 var(--ink)}
+.acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.acts .btn{min-width:0}
+#savevid{grid-column:1/-1}
+select,.dd>summary{font-family:var(--f-body);font-size:13px;color:var(--ink);width:100%;min-height:40px;padding:8px 30px 8px 10px;border:2px solid var(--ink);border-radius:0;
+  background:var(--body) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%231b1c20'/%3E%3C/svg%3E") no-repeat right 10px center;
+  -webkit-appearance:none;appearance:none;cursor:pointer;box-shadow:2px 2px 0 var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+select:focus-visible,.dd>summary:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+.dd{position:relative}
+.dd>summary{list-style:none;display:block}
+.dd>summary::-webkit-details-marker{display:none}
+.dd[open]>summary{background-color:var(--ink);color:var(--body);background-image:none}
+.ddmenu{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);background:var(--body);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:8px 10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 10px;max-height:50vh;overflow:auto}
+.ddh{grid-column:1/-1;font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-top:6px;border-bottom:2px solid var(--body-dk);padding-bottom:2px}
+.ddh:first-child{margin-top:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;padding:7px 2px;cursor:pointer}
+.chk input{accent-color:var(--hot);width:18px;height:18px;margin:0}
+.ddmenu .btn{grid-column:1/-1;margin-top:6px}
+@media (min-width:900px){
+  .dev{max-width:1180px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr);column-gap:28px;align-items:start}
+  .top{grid-column:1/-1}
+  .left{display:flex;flex-direction:column;gap:12px;position:sticky;top:16px}
+  .bezel{position:static}
+  #out{max-height:70vh;max-height:70dvh}
+  .ctl{border-top:0;padding-top:0}
+}
 .lvl{height:8px;border:2px solid var(--ink)}
 .lvl i{display:block;height:100%;width:0;background:var(--hot)}
 .ver{font-size:11px;letter-spacing:.06em;opacity:.75;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:2px solid var(--body-dk);padding-top:10px}
@@ -63,6 +93,13 @@ body.fs{overflow:hidden}
 body.fs .screen{position:fixed;inset:0;z-index:50;min-height:0;background:#000;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 body.fs #out{width:100%;height:100%;max-width:none;max-height:none;object-fit:contain}
 body.fs .tag:not(.rec){display:none}
+body.fs .bezel{position:static;z-index:auto}
+body.fs .ver{display:none}
+body.fs.opts .right{position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:52dvh;overflow:auto;background:var(--body);border-top:2px solid var(--ink);padding:12px max(16px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+body.fs.opts .ctl{border-top:0;padding-top:0}
+body.fs.opts .screen{bottom:52dvh;padding-bottom:64px}
+body.fs.opts .fsbar{padding-top:8px;padding-bottom:8px;flex-wrap:nowrap}
+body.fs.opts #fsprev,body.fs.opts #fsnext,body.fs.opts #fsrand{display:none}
 body.fs .fsbar{display:flex;position:absolute;left:0;right:0;bottom:0;gap:8px;flex-wrap:wrap;padding:12px max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));opacity:0;pointer-events:none;transition:opacity .2s}
 body.fs.bar .fsbar{opacity:1;pointer-events:auto}
 body.fs:not(.bar) .screen{cursor:none}
@@ -77,83 +114,89 @@ body.fs .fsname.show{opacity:1}
     <span class="meta" id="res">—</span>
   </div>
 
+  <div class="left">
   <div class="bezel">
     <div class="screen">
       <canvas id="out" aria-label="Gepixeld beeld"></canvas>
       <span class="tag" id="tag">VOORBEELD</span>
       <span class="fsname" id="fsname" aria-live="polite"></span>
       <div class="fsbar" id="fsbar">
-        <button class="btn" id="fsprev" type="button">Vorige preset</button>
-        <button class="btn" id="fsnext" type="button">Volgende preset</button>
+        <button class="btn" id="fsprev" type="button">Vorige</button>
+        <button class="btn" id="fsnext" type="button">Volgende</button>
         <button class="btn" id="fsrand" type="button">Willekeurig</button>
+        <button class="btn" id="fsopt" type="button" aria-pressed="false">Opties</button>
         <button class="btn rec" id="fsrec" type="button" aria-pressed="false">Opnemen</button>
         <button class="btn" id="fsexit" type="button">Sluit</button>
       </div>
     </div>
   </div>
 
-  <div class="row">
-    <button class="btn shut" id="shut" type="button">Start camera</button>
+  <div class="acts">
+    <button class="btn sm shut" id="shut" type="button">Start camera</button>
     <input class="hide" type="file" id="cam" accept="image/*" capture="environment">
-    <button class="btn" id="flip" type="button" disabled>Wissel</button>
+    <button class="btn sm" id="flip" type="button" disabled>Wissel</button>
+    <button class="btn sm rec" id="rec" type="button" aria-pressed="false" disabled>Opnemen</button>
   </div>
-  <div class="row">
-    <button class="btn rec" id="rec" type="button" aria-pressed="false" disabled>Opnemen</button>
-    <button class="btn" id="fs" type="button">Fullscreen</button>
-    <button class="btn" id="savevid" type="button" hidden>Bewaar video</button>
-  </div>
-  <div class="row">
-    <label class="btn" for="pick">Kies foto/video</label>
+  <div class="acts">
+    <button class="btn sm" id="fs" type="button">Fullscreen</button>
+    <label class="btn sm" for="pick">Open bestand</label>
     <input class="hide" type="file" id="pick" accept="image/*,video/*">
-    <button class="btn" id="save" type="button">Bewaar PNG</button>
+    <button class="btn sm" id="save" type="button">Bewaar PNG</button>
+    <button class="btn sm" id="savevid" type="button" hidden>Bewaar video</button>
   </div>
   <div class="msg" id="msg" role="status"></div>
+  </div>
 
+  <div class="right">
   <div class="ctl">
-    <div class="c">
-      <div class="h"><span>Presets</span><span class="v" id="prv"></span></div>
-      <div class="seg" id="pre"></div>
-      <div class="row"><button class="btn sm shut" id="prand" type="button">Willekeurig</button><button class="btn sm" id="psave" type="button">Bewaar huidige</button><button class="btn sm" id="pdel" type="button" disabled>Wis eigen preset</button></div>
+    <div class="c wide">
+      <label class="h" for="pre"><span>Preset</span></label>
+      <select id="pre"></select>
+      <div class="row"><button class="btn sm shut" id="prand" type="button">Willekeurig</button><button class="btn sm" id="psave" type="button">Bewaar huidige</button><button class="btn sm" id="pdel" type="button" disabled>Wis eigen</button></div>
     </div>
     <div class="c">
-      <div class="h"><span>Pixelgrootte</span><span class="v" id="pxv"></span></div>
+      <label class="h" for="pal"><span>Palet</span><span class="sw" id="palsw"></span></label>
+      <select id="pal"></select>
+    </div>
+    <div class="c">
+      <label class="h" for="dith"><span>Dithering</span></label>
+      <select id="dith"></select>
+    </div>
+    <div class="c">
+      <label class="h" for="px"><span>Pixelgrootte</span><span class="v" id="pxv"></span></label>
       <input type="range" id="px" min="2" max="40" value="10">
     </div>
     <div class="c">
-      <div class="h"><span>Palet</span></div>
-      <div class="seg" id="pal"></div>
-    </div>
-    <div class="c">
-      <div class="h"><span>Kleurniveaus</span><span class="v" id="lvv"></span></div>
+      <label class="h" for="lv"><span>Kleurniveaus</span><span class="v" id="lvv"></span></label>
       <input type="range" id="lv" min="2" max="16" value="5">
     </div>
     <div class="c">
-      <div class="h"><span>Dithering</span></div>
-      <div class="seg" id="dith"></div>
+      <label class="h" for="grid"><span>Raster</span></label>
+      <select id="grid"></select>
     </div>
     <div class="c">
-      <div class="h"><span>Raster</span></div>
-      <div class="seg" id="grid"></div>
+      <label class="h" for="recaud"><span>Geluid in opname</span></label>
+      <select id="recaud"></select>
+    </div>
+    <div class="c wide">
+      <div class="h"><span>Animaties</span></div>
+      <details class="dd" id="animdd">
+        <summary id="anv">kat</summary>
+        <div class="ddmenu" id="animlist"></div>
+      </details>
     </div>
     <div class="c">
-      <div class="h"><span>Animaties</span><span class="v" id="anv"></span></div>
-      <div class="seg" id="anim"></div>
+      <label class="h" for="sens"><span>Beweging</span><span class="v" id="sev"></span></label>
+      <input type="range" id="sens" min="0" max="10" value="5">
     </div>
     <div class="c">
-      <div class="h"><span>Reactie op beweging</span><span class="v" id="sev"></span></div>
-      <input type="range" id="sens" min="0" max="10" value="5" aria-label="Gevoeligheid voor beweging">
-    </div>
-    <div class="c">
-      <div class="h"><span>Reactie op muziek</span><span class="v" id="rev"></span></div>
-      <input type="range" id="react" min="0" max="10" value="0" aria-label="Reactie op muziek via de microfoon">
+      <label class="h" for="react"><span>Muziek</span><span class="v" id="rev"></span></label>
+      <input type="range" id="react" min="0" max="10" value="0">
       <div class="lvl" aria-hidden="true"><i id="lvl"></i></div>
     </div>
-    <div class="c">
-      <div class="h"><span>Geluid in opname</span></div>
-      <div class="seg" id="recaud"></div>
-    </div>
   </div>
-  <div class="ver"><span id="ver"></span><span>Toetsen: F fullscreen · R opnemen · W willekeurig · ← → preset · 1–9</span></div>
+  <div class="ver"><span id="ver"></span><span>Toetsen: F fullscreen · O opties · R opnemen · W willekeurig · ← → preset · 1–9</span></div>
+  </div>
 </div>
 
 <script>
@@ -175,42 +218,37 @@ try{Object.assign(S,JSON.parse(localStorage.getItem("pixelcam")||"{}"),{src:null
 const persist=()=>{try{localStorage.setItem("pixelcam",JSON.stringify({px:S.px,pal:S.pal,lv:S.lv,dith:S.dith,grid:S.grid,anim:S.anim,sens:S.sens,react:S.react,recAudio:S.recAudio}))}catch(e){}};
 const B4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+.5)/16-.5);
 
-function seg(el,opts,key,label){
-  el.innerHTML="";
-  opts.forEach(o=>{
-    const b=document.createElement("button");b.type="button";b.dataset.v=o;
-    if(label)b.append(label(o));else b.textContent=o;
-    b.onclick=()=>{S[key]=o;sync();draw();persist()};
-    el.append(b);
-  });
-}
-seg($("pal"),Object.keys(PALS),"pal",k=>{
-  const f=document.createDocumentFragment();
-  if(PALS[k]){const s=document.createElement("span");s.className="sw";PALS[k].slice(0,6).forEach(c=>{const i=document.createElement("i");i.style.background=c;s.append(i)});f.append(s)}
-  f.append(k);return f;
-});
-seg($("dith"),["uit","bayer","ruis"],"dith");
-seg($("grid"),["uit","lijnen","scanlines"],"grid");
+function fillSelect(el,opts){el.innerHTML="";for(const [v,t] of opts){const o=document.createElement("option");o.value=v;o.textContent=t;el.append(o)}}
+const onSel=(id,f)=>{const el=$(id);el.onchange=el.oninput=()=>f(el.value)};
+fillSelect($("pal"),Object.keys(PALS).map(k=>[k,k]));
+fillSelect($("dith"),[["uit","uit"],["bayer","bayer"],["ruis","ruis"]]);
+fillSelect($("grid"),[["uit","uit"],["lijnen","lijnen"],["scanlines","scanlines"]]);
+fillSelect($("recaud"),[["aan","aan"],["uit","uit"]]);
+onSel("pal",v=>{S.pal=v;sync();draw();persist()});
+onSel("dith",v=>{S.dith=v;sync();draw();persist()});
+onSel("grid",v=>{S.grid=v;sync();draw();persist()});
+onSel("recaud",v=>{S.recAudio=v==="aan";persist();sync()});
 const ANIMS=["kat","fiets","vogels","regen","fonkels","hartjes","glitch","hud","drones","data-regen"];
+const AGROUPS=[["Figuren",["kat","fiets","vogels","hartjes"]],["Sfeer",["regen","fonkels"]],["Cyberpunk",["hud","drones","data-regen","glitch"]]];
 if(!Array.isArray(S.anim))S.anim=["kat"];S.anim=S.anim.filter(a=>ANIMS.includes(a));
-ANIMS.forEach(a=>{
-  const b=document.createElement("button");b.type="button";b.dataset.v=a;b.textContent=a;
-  b.onclick=()=>{S.anim=S.anim.includes(a)?S.anim.filter(x=>x!==a):[...S.anim,a];persist();sync();ui();refreshLoop()};
-  $("anim").append(b);
-});
+for(const [g,list] of AGROUPS){
+  const hd=document.createElement("div");hd.className="ddh";hd.textContent=g;$("animlist").append(hd);
+  for(const a of list){const l=document.createElement("label");l.className="chk";const c=document.createElement("input");c.type="checkbox";c.value=a;
+    c.onchange=()=>{S.anim=c.checked?[...S.anim.filter(x=>x!==a),a]:S.anim.filter(x=>x!==a);persist();sync();ui();refreshLoop()};
+    l.append(c,document.createTextNode(a));$("animlist").append(l)}
+}
+{const bn=document.createElement("button");bn.type="button";bn.className="btn sm";bn.textContent="Alles uit";bn.onclick=()=>{S.anim=[];persist();sync();ui();refreshLoop()};$("animlist").append(bn)}
+document.addEventListener("click",e=>{const d=$("animdd");if(d.open&&!d.contains(e.target))d.open=false});
 function sync(){
   $("px").value=S.px;$("lv").value=S.lv;$("pxv").textContent=S.px+" px";
-  $("lvv").textContent=S.pal==="vrij"?S.lv+" / kanaal":"n.v.t.";
-  $("lv").disabled=S.pal!=="vrij";
-  for(const [id,k] of [["pal","pal"],["dith","dith"],["grid","grid"]])
-    for(const b of $(id).children)b.setAttribute("aria-pressed",b.dataset.v===S[k]);
-  for(const b of $("anim").children)b.setAttribute("aria-pressed",S.anim.includes(b.dataset.v));
-  $("anv").textContent=S.anim.length?S.anim.length+" aan":"uit";
-  $("sens").value=S.sens;$("sev").textContent=S.sens?S.sens+" / 10":"uit";
-  $("react").value=S.react;$("rev").textContent=S.react?S.react+" / 10"+(AU.on?"":" · tik om mic te starten"):"uit";
-  for(const b of $("recaud").children)b.setAttribute("aria-pressed",(b.dataset.v==="aan")===S.recAudio);
-  const cp=curPreset();for(const b of $("pre").children)b.setAttribute("aria-pressed",allPresets()[+b.dataset.i]===cp);
-  $("prv").textContent=cp?cp.n:"eigen mix";$("pdel").disabled=!(cp&&USER.includes(cp));
+  $("lvv").textContent=S.pal==="vrij"?String(S.lv):"n.v.t.";$("lv").disabled=S.pal!=="vrij";
+  $("pal").value=S.pal;$("dith").value=S.dith;$("grid").value=S.grid;$("recaud").value=S.recAudio?"aan":"uit";
+  const sw=$("palsw");sw.innerHTML="";sw.hidden=!PALS[S.pal];(PALS[S.pal]||[]).slice(0,8).forEach(c=>{const i=document.createElement("i");i.style.background=c;sw.append(i)});
+  for(const c of $("animlist").querySelectorAll("input"))c.checked=S.anim.includes(c.value);
+  const n=S.anim.length;$("anv").textContent=n?(n<=3?S.anim.join(", "):S.anim.slice(0,3).join(", ")+" +"+(n-3)):"geen";
+  $("sens").value=S.sens;$("sev").textContent=S.sens?S.sens+"/10":"uit";
+  $("react").value=S.react;$("rev").textContent=S.react?S.react+"/10"+(AU.on?"":" · tik"):"uit";
+  const cp=curPreset();$("pre").value=cp?String(allPresets().indexOf(cp)):"";$("pdel").disabled=!(cp&&USER.includes(cp));
 }
 $("px").oninput=e=>{S.px=+e.target.value;sync();draw();persist()};
 $("lv").oninput=e=>{S.lv=+e.target.value;sync();draw();persist()};
@@ -675,7 +713,6 @@ function audioTick(t,dt){
   }
   if(t-AU.lastBeat>4){AU.bpm=0;AU.beats=[]}
 }
-["aan","uit"].forEach(v=>{const b=document.createElement("button");b.type="button";b.dataset.v=v;b.textContent=v;b.onclick=()=>{S.recAudio=v==="aan";persist();sync()};$("recaud").append(b)});
 
 // ---------- Presets ----------
 const PRESETS=[
@@ -694,13 +731,17 @@ const same=p=>FIELDS.every(k=>p[k]===S[k])&&[...p.anim].sort().join()===[...S.an
 const curPreset=()=>allPresets().find(same);
 function applyPreset(p){
   if(!p)return;FIELDS.forEach(k=>{if(p[k]!==undefined)S[k]=p[k]});S.anim=p.anim.filter(a=>ANIMS.includes(a));
-  persist();ui();refreshLoop();updateMic();flashName(p.n);
+  persist();sync();ui();refreshLoop();updateMic();flashName(p.n);
 }
 function renderPresets(){
   const el=$("pre");el.innerHTML="";
-  allPresets().forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.dataset.i=i;b.textContent=p.n;b.onclick=()=>applyPreset(allPresets()[i]);el.append(b)});
+  const opt=(v,t,par)=>{const o=document.createElement("option");o.value=v;o.textContent=t;par.append(o)};
+  opt("","eigen mix",el);
+  const g1=document.createElement("optgroup");g1.label="Ingebouwd";PRESETS.forEach((p,i)=>opt(i,p.n,g1));el.append(g1);
+  if(USER.length){const g2=document.createElement("optgroup");g2.label="Eigen";USER.forEach((p,i)=>opt(PRESETS.length+i,p.n,g2));el.append(g2)}
   sync();
 }
+$("pre").onchange=()=>{const v=$("pre").value;if(v!=="")applyPreset(allPresets()[+v]);else sync()};
 $("psave").onclick=()=>{
   const c=curPreset();if(c){msg("Deze instellingen staan al als preset ‘"+c.n+"’.");return}
   if(USER.length>=9){msg("Maximaal 9 eigen presets. Wis er eerst een.");return}
@@ -728,7 +769,9 @@ function stepPreset(d){const L=allPresets(),c=curPreset();let i=c?L.indexOf(c):(
 let wake=null,barT=0;
 const isFs=()=>document.body.classList.contains("fs");
 async function lockWake(){try{wake=await navigator.wakeLock?.request("screen")}catch(e){wake=null}}
-function showBar(){document.body.classList.add("bar");clearTimeout(barT);barT=setTimeout(()=>document.body.classList.remove("bar"),3000)}
+const B=document.body;
+function showBar(){B.classList.add("bar");clearTimeout(barT);barT=setTimeout(()=>{if(!B.classList.contains("opts"))B.classList.remove("bar")},3000)}
+function setOpts(on){B.classList.toggle("opts",on);$("fsopt").setAttribute("aria-pressed",on);if(!on)$("animdd").open=false;showBar()}
 async function enterFs(){
   document.body.classList.add("fs");showBar();
   const el=document.documentElement,r=el.requestFullscreen||el.webkitRequestFullscreen;
@@ -736,7 +779,7 @@ async function enterFs(){
   lockWake();
 }
 function exitFs(){
-  document.body.classList.remove("fs","bar");
+  B.classList.remove("fs","bar","opts");$("fsopt").setAttribute("aria-pressed","false");
   if(document.fullscreenElement||document.webkitFullscreenElement){try{const x=(document.exitFullscreen||document.webkitExitFullscreen).call(document);x?.catch?.(()=>{})}catch(e){}}
   try{wake?.release?.()}catch(e){}wake=null;
 }
@@ -746,7 +789,8 @@ document.addEventListener("webkitfullscreenchange",()=>{if(!document.webkitFulls
 $("fs").onclick=enterFs;$("fsexit").onclick=exitFs;
 $("fsnext").onclick=()=>{stepPreset(1);showBar()};$("fsprev").onclick=()=>{stepPreset(-1);showBar()};
 $("fsrec").onclick=()=>{rec?stopRec():startRec();showBar()};
-document.querySelector(".screen").addEventListener("click",e=>{if(!isFs()||e.target.closest(".fsbar"))return;document.body.classList.contains("bar")?document.body.classList.remove("bar"):showBar()});
+$("fsopt").onclick=()=>setOpts(!B.classList.contains("opts"));
+document.querySelector(".screen").addEventListener("click",e=>{if(!isFs()||e.target.closest(".fsbar"))return;if(B.classList.contains("opts")){setOpts(false);return}B.classList.contains("bar")?B.classList.remove("bar"):showBar()});
 document.addEventListener("pointermove",e=>{if(isFs()&&e.pointerType==="mouse")showBar()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&isFs())lockWake()});
 
@@ -758,14 +802,15 @@ document.addEventListener("keydown",e=>{
   if(k==="f"||k==="F"){fsToggle();e.preventDefault()}
   else if(k==="Escape"){if(isFs())exitFs()}
   else if(k==="w"||k==="W"){randomize()}
+  else if((k==="o"||k==="O")&&isFs()){setOpts(!B.classList.contains("opts"))}
   else if(k==="r"||k==="R"){if(!$("rec").disabled){rec?stopRec():startRec()}}
-  else if(tg&&tg.type==="range")return;
+  else if(tg&&(tg.type==="range"||tg.tagName==="SELECT"))return;
   else if(k==="ArrowRight"||k===" "){stepPreset(1);e.preventDefault()}
   else if(k==="ArrowLeft"){stepPreset(-1);e.preventDefault()}
   else if(/^[1-9]$/.test(k))applyPreset(allPresets()[+k-1]);
 });
 
-const VERSION="v8";$("ver").textContent="Pixelcam "+VERSION;
+const VERSION="v9";$("ver").textContent="Pixelcam "+VERSION;
 // Muziekreactie stond nog aan van vorige keer: mic pas starten na een tik (geen ongevraagde mic-vraag bij openen)
 if(S.react>0)document.addEventListener("pointerdown",()=>{primeAudio();updateMic()},{once:true});
 setSrc(sample());renderPresets();ui();refreshLoop();

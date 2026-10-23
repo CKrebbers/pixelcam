@@ -6,3 +6,4 @@
 - **Animaties (cyberpunk):** neon cyaan #29f3ff, magenta #ff2bd6, rood #ff3355, wit #e8ffff; tekst in eigen 3×5 pixelfont; volgen het gekozen palet.
 - **Fullscreen:** zwart scherm, beeld met object-fit contain; knoppenbalk onderin in dezelfde .btn-stijl, verdwijnt na 3 s; presetnaam als magenta label bovenin.
 - **HUD-tekst:** 3×5 pixelfont op de hoge-resolutie uitvoer (niet op het pixelraster), schaal ≈ kortste zijde / 170.
+- **Bediening (v9):** native selects met eigen pijltje (geen afgeronde hoeken), 2px rand + 2px offset-schaduw; animaties in een dropdown met vinkjes in groepen (Figuren/Sfeer/Cyberpunk); opties in 2 kolommen; beeld sticky.
