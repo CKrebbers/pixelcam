@@ -9,7 +9,7 @@
 - [x] HUD-tekst scherp op hoge resolutie, los van pixelgrootte
 - [x] Versienummer zichtbaar
 - [x] Test: nep-camera + nep-microfoon, opname met audiotrack
-- [ ] Push, Pages-build, artifact
+- [x] Push, Pages-build, artifact
 
 ## Gevonden in ronde v7
 - Beatdetectie op basgemiddelde faalt door dB-schaal → vervangen door onset-detectie (bas-stijging t.o.v. vorig frame); test: kick 120 BPM → BPM 120
